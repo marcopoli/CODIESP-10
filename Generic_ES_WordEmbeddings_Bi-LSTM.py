@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 import random
-from keras.layers import Input
+from keras.layers import Input, Flatten, TimeDistributed
 import keras
 from keras.layers import Conv1D , Embedding
 from keras.layers import Dropout
@@ -162,28 +162,19 @@ le = joblib.load('label_encoder_le.vec')
 # define the model
 input = Input(shape=(256,))
 m = Embedding(vocab_size, 300, weights=[embedding_matrix], input_length=256, trainable=False) (input)
-
-
 bi = Bidirectional(LSTM(256, activation ='tanh', return_sequences = True, dropout=0.3)) (m)
-
-aa = SeqSelfAttention(attention_activation='tanh') (bi)
-aa = Conv1D(512,5, activation ='relu' ) (aa)
-aa = MaxPool1D(2) (aa)
-aa = Dropout(0.2) (aa)
-
-added = keras.layers.Concatenate(axis=1)([aa,bi])
-
-ff = GlobalMaxPool1D() (added)
-ff = Dense(2000)(ff)
-ff = Dropout(0.3) (ff)
-ff =Dense(1788, activation='softmax') (ff)
+bi = TimeDistributed(Dense(vocab_size)) (bi)
+bi = Dense(100)(bi)
+zz = Flatten() (bi)
+zz = Dense(3000, activation='tanh')(zz)
+ff = Dense(1788, activation='softmax') (zz)
 
 model = keras.models.Model(inputs=[input], outputs=[ff])
 
 model.summary(line_length=100)
 
 from keras.callbacks import CSVLogger
-filepath="28042020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
+filepath="LSTM_28042020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='max',period=2)
 
 callbacks_list = [
@@ -192,17 +183,17 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-#history = model.fit(padded_train,encoded_train_labels,128,50,
-#                      validation_split = 0.10,
-#                      callbacks=callbacks_list ,
-#                      verbose=1)
+history = model.fit(padded_train,encoded_train_labels,128,50,
+                      validation_split = 0.10,
+                      callbacks=callbacks_list ,
+                      verbose=1)
 #model.load_weights('LSTM_CNN_ATTENTION_28042020weights.00048-6.76415_0.2118.hdf5')
-#model.save('28042020model.h5')
+model.save('LSTM_28042020model.h5')
 
-#res = model.predict(padded_test)
-#joblib.dump(res,'results_prediction.vec')
+res = model.predict(padded_test)
+joblib.dump(res,'LSTM_results_prediction.vec')
 
-res = joblib.load('results_prediction.vec')
+#res = joblib.load('results_prediction.vec')
 
 map = le.category_mapping[0]['mapping']
 
@@ -224,6 +215,5 @@ print(res_encoded)
 
 print('Testing accuracy %s' % accuracy_score(test_labels, res_encoded))
 print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='weighted')))
-
-#Testing accuracy 0.1836734693877551
-#Testing F1 score: 0.16066030988784247
+#Testing accuracy 0.12990580847723704
+#Testing F1 score: 0.11018098048162976

@@ -121,29 +121,48 @@ print(padded_test)
 test_labels = test['Code']
 print(test_labels)
 
+padded_test = joblib.load('padded_test.vec')
+test_labels = joblib.load('test_labels.vec')
+padded_train = joblib.load('padded_train.vec')
+encoded_train_labels = joblib.load('encoded_train_labels.vec')
+le = joblib.load('label_encoder_le.vec')
 
 #LOAD WORDEMBEDDING
 import gensim
 #google_300 = gensim.models.KeyedVectors.load_word2vec_format("cc.es.300.vec")
 
+# get the vectors
+file = open('vectors_ap8889_skipgram_s300_w10_neg20_hs0_sam1e-4_iter5.txt')
+
 # create a weight matrix for words in training docs
-#count = 0
-#embedding_matrix = np.zeros((vocab_size, 300))
-#for word, i in t.word_index.items():
-#    try:
-#        embedding_vector = google_300.word_vec(word)
-#    except:
-#        #keep a random embedidng
-#        count = count+1
-#        max = len(google_300.vocab.keys()) - 1
-#        index = random.randint(0, max)
-#        word = google_300.index2word[index]
-#        embedding_vector = google_300.word_vec(word)
+count = 0
+embedding_matrix = np.zeros((vocab_size, 300))
+vocab_and_vectors = {}
+arrValues = []
+for line in file:
+  values = line.split()
+  word = values[0]
+  vector = np.asarray(values[1:], dtype='float32')
+  vocab_and_vectors[word] = vector
+  arrValues.append(vector)
 
-#    if embedding_vector is not None:
-#        embedding_matrix[i] = embedding_vector
 
-#joblib.dump(embedding_matrix,'embedding_matrix.vec')
+for word, i in t.word_index.items():
+    try:
+        embedding_vector = vocab_and_vectors.get(word)
+    except:
+        #keep a random embedidng
+        count = count+1
+        #max = len(google_300.vocab.keys()) - 1
+        index = random.randint(0, 1000)
+        #word = google_300.index2word[index]
+        embedding_vector = arrValues[index]
+        #google_300.word_vec(word)
+
+    if embedding_vector is not None:
+        embedding_matrix[i] = embedding_vector
+print(count)
+joblib.dump(embedding_matrix,'embedding_matrix_medical.vec')
 #joblib.dump(padded_test,'padded_test.vec')
 #joblib.dump(test_labels,'test_labels.vec')
 
@@ -152,12 +171,12 @@ import gensim
 
 #joblib.dump(le,'label_encoder_le.vec')
 
-embedding_matrix = joblib.load('embedding_matrix.vec')
-padded_test = joblib.load('padded_test.vec')
-test_labels = joblib.load('test_labels.vec')
-padded_train = joblib.load('padded_train.vec')
-encoded_train_labels = joblib.load('encoded_train_labels.vec')
-le = joblib.load('label_encoder_le.vec')
+#embedding_matrix = joblib.load('embedding_matrix.vec')
+#padded_test = joblib.load('padded_test.vec')
+#test_labels = joblib.load('test_labels.vec')
+#padded_train = joblib.load('padded_train.vec')
+#encoded_train_labels = joblib.load('encoded_train_labels.vec')
+#le = joblib.load('label_encoder_le.vec')
 
 # define the model
 input = Input(shape=(256,))
@@ -184,7 +203,7 @@ model.summary(line_length=100)
 
 from keras.callbacks import CSVLogger
 filepath="28042020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='max',period=2)
+checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 callbacks_list = [
     checkpoint
@@ -192,17 +211,18 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-#history = model.fit(padded_train,encoded_train_labels,128,50,
-#                      validation_split = 0.10,
-#                      callbacks=callbacks_list ,
-#                      verbose=1)
-#model.load_weights('LSTM_CNN_ATTENTION_28042020weights.00048-6.76415_0.2118.hdf5')
-#model.save('28042020model.h5')
+history = model.fit(padded_train,encoded_train_labels,128,70,
+                      validation_split = 0.10,
+                      callbacks=callbacks_list ,
+                      verbose=1)
+#model.load_weights('LSTM_CNN_ATTENTION_28042020weights.00048-6.76415_0.2118.hdf5')#
+#
+model.save('medical_29042020model.h5')
 
-#res = model.predict(padded_test)
+res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')
 
-res = joblib.load('results_prediction.vec')
+#res = joblib.load('results_prediction.vec')
 
 map = le.category_mapping[0]['mapping']
 
@@ -224,6 +244,3 @@ print(res_encoded)
 
 print('Testing accuracy %s' % accuracy_score(test_labels, res_encoded))
 print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='weighted')))
-
-#Testing accuracy 0.1836734693877551
-#Testing F1 score: 0.16066030988784247

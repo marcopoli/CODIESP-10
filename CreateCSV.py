@@ -10,9 +10,10 @@ import multiprocessing
 from sklearn.metrics import accuracy_score, f1_score
 from gensim.test.test_doc2vec import ConcatenatedDoc2Vec
 import numpy as np
+from sklearn.svm import SVC
 from tqdm import tqdm  # barra di progresso
 
-tqdm.pandas(desc="progress-bar")
+#tqdm.pandas(desc="progress-bar")
 
 
 def print_code(index):
@@ -200,7 +201,6 @@ def get_vectors(model, tagged_docs):
     targets, regressors = zip(*[(doc.tags[0], model.infer_vector(doc.words, steps=20)) for doc in sents])
     return targets, regressors
 
-
 # training regressione logistica
 y_train, X_train = get_vectors(new_model, train_tagged)
 y_test, X_test = get_vectors(new_model, test_tagged)
@@ -215,5 +215,28 @@ print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')
 # Testing accuracy 0.388503100088574
 # Testing F1 score: 0.29748627519545125
 
-print(logreg.predict([model_dbow.infer_vector(tokenize_text('fractura proximal'), steps=20)]))
+#print(logreg.predict([model_dbow.infer_vector(tokenize_text('fractura proximal'), steps=20)]))
 
+# Model paring
+new_model = ConcatenatedDoc2Vec([model_dbow, model_dmm])  # Concatenazione dei due modelli
+
+
+def get_vectors(model, tagged_docs):
+    sents = tagged_docs.values
+    targets, regressors = zip(*[(doc.tags[0], model.infer_vector(doc.words, steps=20)) for doc in sents])
+    return targets, regressors
+
+# training regressione logistica
+y_train, X_train = get_vectors(new_model, train_tagged)
+y_test, X_test = get_vectors(new_model, test_tagged)
+
+X_test = preprocessing.scale(np.array(X_test))
+X_train = preprocessing.scale(np.array(X_train))
+
+logreg = SVC(C=1e5, kernel='rbf')
+logreg.fit(X_train, y_train)
+y_pred = logreg.predict(X_test)
+print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
+print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
+#Testing accuracy 0.05337519623233909
+#Testing F1 score: 0.03203799567765573
