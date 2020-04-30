@@ -121,11 +121,11 @@ print(padded_test)
 test_labels = test['Code']
 print(test_labels)
 
-padded_test = joblib.load('padded_test.vec')
-test_labels = joblib.load('test_labels.vec')
-padded_train = joblib.load('padded_train.vec')
-encoded_train_labels = joblib.load('encoded_train_labels.vec')
-le = joblib.load('label_encoder_le.vec')
+#padded_test = joblib.load('padded_test.vec')
+#test_labels = joblib.load('test_labels.vec')
+#padded_train = joblib.load('padded_train.vec')
+#encoded_train_labels = joblib.load('encoded_train_labels.vec')
+#le = joblib.load('label_encoder_le.vec')
 
 #LOAD WORDEMBEDDING
 import gensim
@@ -146,10 +146,20 @@ for line in file:
   vocab_and_vectors[word] = vector
   arrValues.append(vector)
 
+if vocab_and_vectors.get('aslfbwqfoowòdò') is None:
+    print('None')
+print(arrValues[99])
 
 for word, i in t.word_index.items():
     try:
         embedding_vector = vocab_and_vectors.get(word)
+
+        if embedding_vector is None:
+            count = count + 1
+            # max = len(google_300.vocab.keys()) - 1
+            index = random.randint(0, 1000)
+            # word = google_300.index2word[index]
+            embedding_vector = arrValues[index]
     except:
         #keep a random embedidng
         count = count+1
@@ -162,7 +172,7 @@ for word, i in t.word_index.items():
     if embedding_vector is not None:
         embedding_matrix[i] = embedding_vector
 print(count)
-joblib.dump(embedding_matrix,'embedding_matrix_medical.vec')
+#joblib.dump(embedding_matrix,'embedding_matrix_medical.vec')
 #joblib.dump(padded_test,'padded_test.vec')
 #joblib.dump(test_labels,'test_labels.vec')
 
@@ -217,7 +227,7 @@ history = model.fit(padded_train,encoded_train_labels,128,70,
                       verbose=1)
 #model.load_weights('LSTM_CNN_ATTENTION_28042020weights.00048-6.76415_0.2118.hdf5')#
 #
-model.save('medical_29042020model.h5')
+#model.save('medical_29042020model.h5')
 
 res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')
@@ -244,3 +254,5 @@ print(res_encoded)
 
 print('Testing accuracy %s' % accuracy_score(test_labels, res_encoded))
 print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='weighted')))
+#Testing accuracy 0.12205651491365777
+#Testing F1 score: 0.11158514177643784
