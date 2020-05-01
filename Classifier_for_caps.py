@@ -117,6 +117,7 @@ def classifiers(cap):
     logreg = LogisticRegression(n_jobs=1, C=1e5, max_iter=2000)
     logreg.fit(X_train, y_train)
     y_pred = logreg.predict(X_test)
+    logreg.predict_log_proba()
     print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
     print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
     # Testing accuracy 0.3333333333333333   per il capitolo 3 (quello con le 'e')

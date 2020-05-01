@@ -132,19 +132,23 @@ import gensim
 #google_300 = gensim.models.KeyedVectors.load_word2vec_format("cc.es.300.vec")
 
 # get the vectors
-file = open('vectors_ap8889_skipgram_s300_w10_neg20_hs0_sam1e-4_iter5.txt')
+file = open('/Volumes/MacPassport/embeddings-l-model_es.vec')
 
 # create a weight matrix for words in training docs
 count = 0
 embedding_matrix = np.zeros((vocab_size, 300))
 vocab_and_vectors = {}
 arrValues = []
+z = 0
 for line in file:
-  values = line.split()
-  word = values[0]
-  vector = np.asarray(values[1:], dtype='float32')
-  vocab_and_vectors[word] = vector
-  arrValues.append(vector)
+    if(z != 0):
+        values = line.split()
+        word = values[0]
+        vector = np.asarray(values[1:], dtype='float32')
+        vocab_and_vectors[word] = vector
+        arrValues.append(vector)
+    else:
+        z= z+1
 
 if vocab_and_vectors.get('aslfbwqfoowòdò') is None:
     print('None')
@@ -172,14 +176,14 @@ for word, i in t.word_index.items():
     if embedding_vector is not None:
         embedding_matrix[i] = embedding_vector
 print(count)
-#joblib.dump(embedding_matrix,'embedding_matrix_medical.vec')
-#joblib.dump(padded_test,'padded_test.vec')
-#joblib.dump(test_labels,'test_labels.vec')
+joblib.dump(embedding_matrix,'nn_embedding_matrix_medical.vec')
+joblib.dump(padded_test,'nn_padded_test.vec')
+joblib.dump(test_labels,'nn_test_labels.vec')
 
-#joblib.dump(padded_train,'padded_train.vec')
-#joblib.dump(encoded_train_labels,'encoded_train_labels.vec')
+joblib.dump(padded_train,'nn_padded_train.vec')
+joblib.dump(encoded_train_labels,'nn_encoded_train_labels.vec')
 
-#joblib.dump(le,'label_encoder_le.vec')
+joblib.dump(le,'nn_label_encoder_le.vec')
 
 #embedding_matrix = joblib.load('embedding_matrix.vec')
 #padded_test = joblib.load('padded_test.vec')
@@ -191,8 +195,6 @@ print(count)
 # define the model
 input = Input(shape=(256,))
 m = Embedding(vocab_size, 300, weights=[embedding_matrix], input_length=256, trainable=False) (input)
-
-
 bi = Bidirectional(LSTM(256, activation ='tanh', return_sequences = True, dropout=0.3)) (m)
 
 aa = SeqSelfAttention(attention_activation='tanh') (bi)
@@ -205,7 +207,7 @@ added = keras.layers.Concatenate(axis=1)([aa,bi])
 ff = GlobalMaxPool1D() (added)
 ff = Dense(2000)(ff)
 ff = Dropout(0.3) (ff)
-ff =Dense(1788, activation='softmax') (ff)
+ff =Dense(1789, activation='softmax') (ff)
 
 model = keras.models.Model(inputs=[input], outputs=[ff])
 
@@ -225,9 +227,9 @@ history = model.fit(padded_train,encoded_train_labels,128,70,
                       validation_split = 0.10,
                       callbacks=callbacks_list ,
                       verbose=1)
-#model.load_weights('LSTM_CNN_ATTENTION_28042020weights.00048-6.76415_0.2118.hdf5')#
+#model.load_weights('28042020weights.00031-6.85585.hdf5')#
 #
-#model.save('medical_29042020model.h5')
+model.save('FastText embeddings from SUC_medical_29042020model.h5')
 
 res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')
@@ -254,5 +256,11 @@ print(res_encoded)
 
 print('Testing accuracy %s' % accuracy_score(test_labels, res_encoded))
 print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='weighted')))
-#Testing accuracy 0.12205651491365777
-#Testing F1 score: 0.11158514177643784
+
+#Skipgram 300 ap8889 - +9000 not found
+#Testing accuracy 0.17778649921507064
+#Testing F1 score: 0.15489058787197335
+
+#Fasttext Unannotated Corpora - 1239 not found
+#Testing accuracy 0.20682888540031397
+#Testing F1 score: 0.1862472630533868

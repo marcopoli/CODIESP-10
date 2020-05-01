@@ -142,7 +142,7 @@ y_pred = logreg.predict(X_test)
 print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
 print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
 # Testing accuracy 0.11891679748822606 con 3 epoche
-# Testing F1 score: 0.11396692610730397
+# # Testing F1 score: 0.11396692610730397
 
 print(logreg.predict([model_dmm.infer_vector(tokenize_text('fractura proximal'), steps=20)]))
 # h05.20
