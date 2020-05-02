@@ -132,7 +132,7 @@ import gensim
 #google_300 = gensim.models.KeyedVectors.load_word2vec_format("cc.es.300.vec")
 
 # get the vectors
-file = open('/Volumes/MacPassport/embeddings-l-model_es.vec')
+file = open('/Volumes/MacPassport/glove-sbwc.i25.vec')
 
 # create a weight matrix for words in training docs
 count = 0
@@ -223,13 +223,13 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-history = model.fit(padded_train,encoded_train_labels,128,70,
+history = model.fit(padded_train,encoded_train_labels,128,100,
                       validation_split = 0.10,
                       callbacks=callbacks_list ,
                       verbose=1)
 #model.load_weights('28042020weights.00031-6.85585.hdf5')#
 #
-model.save('FastText embeddings from SUC_medical_29042020model.h5')
+model.save('Glove embeddings from SUC_medical_29042020model.h5')
 
 res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')
@@ -264,3 +264,7 @@ print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='
 #Fasttext Unannotated Corpora - 1239 not found
 #Testing accuracy 0.20682888540031397
 #Testing F1 score: 0.1862472630533868
+
+#Glove 1531 not found from 0.23697
+#Testing accuracy 0.19819466248037676
+#Testing F1 score: 0.17792399584814533
