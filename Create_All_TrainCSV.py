@@ -1,4 +1,6 @@
 import csv
+import json
+import pickle
 
 
 class code_desc:
@@ -174,7 +176,7 @@ def TrainCSV_with_emptyclass():
                     keeptext = keeptext.split('\n')
                     keeptext = "".join(keeptext)
                     while keeptext.find('.') > 0:
-                        #if keeptext.find('.') != -1:
+                        # if keeptext.find('.') != -1:
                         all_row.append(code_desc('empty', keeptext[:keeptext.find('.')]))
                         keeptext = keeptext[keeptext.find('.') + 1:]
                         print("Lunghezza di keeptext: " + str(len(keeptext)))
@@ -323,5 +325,56 @@ def TrainCSV_with_emptyclass():
             csv_writer.writerow([str(all_row[i].code), str(all_row[i].desc)])
 
 
+def TrainCSV_with_only_abstract():
+    data = json.load(open("abstractsWithCIE10_v2.json"))
+    file_dic = open("dic_caps.pck", "rb")
+    dic_caps = pickle.load(file_dic)
+    all_row = []
+    for a in range(0, len(data['articles'])):  # len(data['articles']) !!!!!!!!!!!!
+        print(str(a) + "/" + str(len(data['articles'])))
+        for b in range(0, len(data['articles'][a])):
+            try:
+                for c in range(0, len(data['articles'][a]['Mesh'][b])):
+                    try:
+                        for d in range(0, len(data['articles'][a]['Mesh'][b]['CIE'])):
+                            # prendo il pre_code del codice
+                            pre_c = str(data['articles'][a]['Mesh'][b]['CIE'][d]).split(".")[0]  # pre_code
+                            if pre_c in dic_caps:
+                                abstract = str(data['articles'][a]['abstractText'])
+                                all_row.append((code_desc(data['articles'][a]['Mesh'][b]['CIE'][d], abstract)))
+                    except:
+                        a = a
+            except:
+                a = a
+
+    print(len(all_row))
+    deleted = 0
+    i = 0
+    while i < (len(all_row) - deleted - 1):
+        print("Analize: " + str(i))
+        j = i + 1
+        z = 0
+        while z < 10: # j < (len(all_row) - deleted):
+            if all_row[i].code == all_row[j].code and all_row[i].desc == all_row[j].desc:
+                all_row.pop(j)
+                deleted += 1
+                print("Deleted: " + str(deleted))
+                j -= 1
+            j += 1
+            z += 1
+        i += 1
+    print(len(all_row))
+
+    # Scrittura in un file csv di all_row
+    with open('Train_with_only_abstract.csv', mode='w') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        # Scriviamo prima la riga di intestazione
+        csv_writer.writerow(['Code', 'Desc'])
+        # aggiungiamo ora i dati
+        for i in range(0, len(all_row)):
+            csv_writer.writerow([str(all_row[i].code), str(all_row[i].desc)])
+
+
 # TrainCSV()
-TrainCSV_with_emptyclass()
+# TrainCSV_with_emptyclass()
+TrainCSV_with_only_abstract()
