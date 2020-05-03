@@ -102,7 +102,7 @@ print(len(le.category_mapping))
 # integer encode the documents
 encoded_train = t.texts_to_sequences(train['Desc'])
 
-max_length = 256
+max_length = 64
 padded_train = pad_sequences(encoded_train, maxlen=max_length, padding='post')
 print(padded_train)
 
@@ -114,7 +114,7 @@ encoded_train_labels = le.transform(list(train_labels))
 # integer encode the documents
 encoded_test = t.texts_to_sequences(test['Desc'])
 
-max_length = 256
+max_length = 64
 padded_test = pad_sequences(encoded_test, maxlen=max_length, padding='post')
 print(padded_test)
 
@@ -130,9 +130,11 @@ print(test_labels)
 #LOAD WORDEMBEDDING
 import gensim
 #google_300 = gensim.models.KeyedVectors.load_word2vec_format("cc.es.300.vec")
+joblib.dump(t,'lstm_fasttext__tokenizer.vec')
 
+print('load_embeddings...')
 # get the vectors
-file = open('/Volumes/MacPassport/glove-sbwc.i25.vec')
+file = open('/Volumes/MacPassport/embeddings-l-model_es.vec')
 
 # create a weight matrix for words in training docs
 count = 0
@@ -176,14 +178,14 @@ for word, i in t.word_index.items():
     if embedding_vector is not None:
         embedding_matrix[i] = embedding_vector
 print(count)
-joblib.dump(embedding_matrix,'nn_embedding_matrix_medical.vec')
-joblib.dump(padded_test,'nn_padded_test.vec')
-joblib.dump(test_labels,'nn_test_labels.vec')
+joblib.dump(embedding_matrix,'lstm_fasttext__embedding_matrix_medical.vec')
+joblib.dump(padded_test,'lstm_fasttext__padded_test.vec')
+joblib.dump(test_labels,'lstm_fasttext__test_labels.vec')
 
-joblib.dump(padded_train,'nn_padded_train.vec')
-joblib.dump(encoded_train_labels,'nn_encoded_train_labels.vec')
+joblib.dump(padded_train,'lstm_fasttext__padded_train.vec')
+joblib.dump(encoded_train_labels,'lstm_fasttext__encoded_train_labels.vec')
 
-joblib.dump(le,'nn_label_encoder_le.vec')
+joblib.dump(le,'lstm_fasttext__label_encoder_le.vec')
 
 #embedding_matrix = joblib.load('embedding_matrix.vec')
 #padded_test = joblib.load('padded_test.vec')
@@ -193,28 +195,28 @@ joblib.dump(le,'nn_label_encoder_le.vec')
 #le = joblib.load('label_encoder_le.vec')
 
 # define the model
-input = Input(shape=(256,))
-m = Embedding(vocab_size, 300, weights=[embedding_matrix], input_length=256, trainable=False) (input)
-bi = Bidirectional(LSTM(256, activation ='tanh', return_sequences = True, dropout=0.3)) (m)
+input = Input(shape=(64,))
+m = Embedding(vocab_size, 300, weights=[embedding_matrix], input_length=64, trainable=False) (input)
+bi = Bidirectional(LSTM(64, activation ='tanh', return_sequences = True, dropout=0.3)) (m)
 
 aa = SeqSelfAttention(attention_activation='tanh') (bi)
-aa = Conv1D(512,5, activation ='relu' ) (aa)
+aa = Conv1D(128,5, activation ='relu' ) (aa)
 aa = MaxPool1D(2) (aa)
 aa = Dropout(0.2) (aa)
 
 added = keras.layers.Concatenate(axis=1)([aa,bi])
 
 ff = GlobalMaxPool1D() (added)
-ff = Dense(2000)(ff)
+ff = Dense(4000)(ff)
 ff = Dropout(0.3) (ff)
-ff =Dense(1789, activation='softmax') (ff)
+ff =Dense(1788, activation='softmax') (ff)
 
 model = keras.models.Model(inputs=[input], outputs=[ff])
 
 model.summary(line_length=100)
 
 from keras.callbacks import CSVLogger
-filepath="28042020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
+filepath="LSTM_CNN_ATT_Fasttext_03052020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 callbacks_list = [
@@ -223,13 +225,13 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-history = model.fit(padded_train,encoded_train_labels,128,100,
-                      validation_split = 0.10,
-                      callbacks=callbacks_list ,
-                      verbose=1)
-#model.load_weights('28042020weights.00031-6.85585.hdf5')#
+#history = model.fit(padded_train,encoded_train_labels,256,70,
+#                      validation_split = 0.10,
+#                      callbacks=callbacks_list ,
+#                      verbose=1)
+model.load_weights('LSTM_CNN_ATT_Fasttext_final_03052020.h5')#
 #
-model.save('Glove embeddings from SUC_medical_29042020model.h5')
+#model.save('LSTM_CNN_ATT_Fasttext_final_03052020.h5')
 
 res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')
@@ -257,6 +259,9 @@ print(res_encoded)
 print('Testing accuracy %s' % accuracy_score(test_labels, res_encoded))
 print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='weighted')))
 
+from sklearn.metrics import classification_report
+print(classification_report(test_labels, res_encoded,digits=5))
+
 #Skipgram 300 ap8889 - +9000 not found
 #Testing accuracy 0.17778649921507064
 #Testing F1 score: 0.15489058787197335
@@ -268,3 +273,11 @@ print('Testing F1 score: {}'.format(f1_score(test_labels, res_encoded, average='
 #Glove 1531 not found from 0.23697
 #Testing accuracy 0.19819466248037676
 #Testing F1 score: 0.17792399584814533
+
+#BERT MACRO - Weighted
+#Testing accuracy 0.07273 0.81574
+#Testing F1 score:  0.07106 0.82554
+
+#BERT
+#Testing accuracy 0.1978021978021978
+#Testing F1 score: 0.17112304629300462
