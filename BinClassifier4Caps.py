@@ -3,6 +3,7 @@
 
 from boto import sns
 from pandas import read_csv
+from sklearn.svm import SVR, SVC
 from tqdm import tqdm  # barra di progresso
 from gensim.models import Doc2Vec
 from sklearn import utils
@@ -20,7 +21,7 @@ import pickle
 
 def tokenize_text(text):
     # Acquisizione delle stop word
-    file_stopw = open("stop_word.pck", "rb")
+    file_stopw = open("support/stop_word.pck", "rb")
     stop_word = pickle.load(file_stopw)
     tokens = list(str(text).lower().split(" "))
     for z in range(0, len(stop_word)):
@@ -71,7 +72,7 @@ def vec_for_learning(model, tagged_docs):
     return targets, regressors
 
 
-dic_caps = pickle.load(open("dic_caps.pck", "rb"))
+dic_caps = pickle.load(open("support/dic_caps.pck", "rb"))
 
 
 class code_desc:
@@ -124,9 +125,10 @@ def createAllCSV4BinClassifier(cap):
 
 prec = []
 def BinClassifer(cap):
-    df = read_csv('BinClass_cap' + str(cap) + 'Train.csv')
+    df = read_csv('Training/BinClass/BinClass_cap' + str(cap) + 'Train.csv')
     df = df[['Code', 'Desc']]
     # df = df[pd.notnull(df['desc'])]
+    df = df.sample(frac=1).reset_index(drop=True)
     print(df.head(10))
     print(df.shape)
 
@@ -162,13 +164,15 @@ def BinClassifer(cap):
         model_dmm.alpha -= 0.002
         model_dmm.min_alpha = model_dmm.alpha
 
-    model_dmm.save('ModelBinClassCap' + str(cap) + '.bin') # salvo il modello
+    model_dmm.save('Model_DMM_BinClassCap' + str(cap) + '.bin') # salvo il modello
 
     y_train, X_train = vec_for_learning(model_dmm, train_tagged)
     y_test, X_test = vec_for_learning(model_dmm, test_tagged)
-    logreg = LogisticRegression(n_jobs=1, C=1e5, max_iter=2000)
-    logreg.fit(X_train, y_train)
-    y_pred = logreg.predict(X_test)
+    model = SVC(kernel='rbf',C=0.1, verbose=True)
+    model.fit(X_train, y_train)
+    pickle.dump(model, open('Model_SVM_BinClassCap' + str(cap) + '.bin', 'wb'))
+
+    y_pred = model.predict(X_test)
     # y_pred = logreg.predict_proba(X_test)
     print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
     print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
