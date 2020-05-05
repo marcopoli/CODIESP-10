@@ -168,8 +168,9 @@ def BinClassifer(cap):
 
     y_train, X_train = vec_for_learning(model_dmm, train_tagged)
     y_test, X_test = vec_for_learning(model_dmm, test_tagged)
-    model = SVC(kernel='rbf',C=0.1, verbose=True)
+    model = SVC(kernel='rbf',C=0.1, verbose=True, probability=True)
     model.fit(X_train, y_train)
+    model.predict_log_proba
     pickle.dump(model, open('Model_SVM_BinClassCap' + str(cap) + '.bin', 'wb'))
 
     y_pred = model.predict(X_test)

@@ -66,7 +66,7 @@ def tokenize_text(text):
     return tokens
 
 #LOADING DATASET
-df = pd.read_csv('Train.csv')
+df = pd.read_csv('Train_Task2.csv')
 df = df[['Code', 'Desc']]
 # df = df[pd.notnull(df['desc'])]
 print(df.head(10))
@@ -79,15 +79,18 @@ print("Parole: " + str(df['Desc'].apply(lambda x: len(x.split(' '))).sum()))  # 
 df['Desc'] = df['Desc'].apply(remove_symbol)
 print(df.head(10))
 
-train, test = train_test_split(df, test_size=0.3, random_state=42)
+train, test = train_test_split(df, test_size=0.1, random_state=42)
 
 # Acquisizione delle stop word
-file_stopw = open("stop_word.pck", "rb")
+file_stopw = open("support/stop_word.pck", "rb")
 stop_word = pickle.load(file_stopw)
 
 # prepare tokenizer
 t = Tokenizer()
 t.fit_on_texts(df['Desc'])
+joblib.dump(t,'lstm_fasttext__tokenizer_total_Task2.vec')
+
+
 vocab_size = len(t.word_index) + 1
 
 #prepare class encoder
@@ -130,7 +133,7 @@ print(test_labels)
 #LOAD WORDEMBEDDING
 import gensim
 #google_300 = gensim.models.KeyedVectors.load_word2vec_format("cc.es.300.vec")
-joblib.dump(t,'lstm_fasttext__tokenizer.vec')
+
 
 print('load_embeddings...')
 # get the vectors
@@ -178,21 +181,20 @@ for word, i in t.word_index.items():
     if embedding_vector is not None:
         embedding_matrix[i] = embedding_vector
 print(count)
-joblib.dump(embedding_matrix,'lstm_fasttext__embedding_matrix_medical.vec')
-joblib.dump(padded_test,'lstm_fasttext__padded_test.vec')
-joblib.dump(test_labels,'lstm_fasttext__test_labels.vec')
+joblib.dump(embedding_matrix,'lstm_fasttext__embedding_matrix_medical_total_task2.vec')
+#joblib.dump(padded_test,'lstm_fasttext__padded_test.vec')
+#joblib.dump(test_labels,'lstm_fasttext__test_labels.vec')
 
-joblib.dump(padded_train,'lstm_fasttext__padded_train.vec')
-joblib.dump(encoded_train_labels,'lstm_fasttext__encoded_train_labels.vec')
-
-joblib.dump(le,'lstm_fasttext__label_encoder_le.vec')
+#joblib.dump(padded_train,'lstm_fasttext__padded_train.vec')
+#joblib.dump(encoded_train_labels,'lstm_fasttext__encoded_train_labels.vec')
+joblib.dump(le,'lstm_fasttext__label_encoder_le_Task2.vec')
 
 #embedding_matrix = joblib.load('embedding_matrix.vec')
 #padded_test = joblib.load('padded_test.vec')
 #test_labels = joblib.load('test_labels.vec')
 #padded_train = joblib.load('padded_train.vec')
 #encoded_train_labels = joblib.load('encoded_train_labels.vec')
-#le = joblib.load('label_encoder_le.vec')
+#le = joblib.load('label_encoder_le_task2.vec')
 
 # define the model
 input = Input(shape=(64,))
@@ -209,7 +211,7 @@ added = keras.layers.Concatenate(axis=1)([aa,bi])
 ff = GlobalMaxPool1D() (added)
 ff = Dense(4000)(ff)
 ff = Dropout(0.3) (ff)
-ff =Dense(1788, activation='softmax') (ff)
+ff =Dense(546, activation='softmax') (ff)
 
 model = keras.models.Model(inputs=[input], outputs=[ff])
 
@@ -225,13 +227,13 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-#history = model.fit(padded_train,encoded_train_labels,256,70,
-#                      validation_split = 0.10,
-#                      callbacks=callbacks_list ,
-#                      verbose=1)
-model.load_weights('LSTM_CNN_ATT_Fasttext_final_03052020.h5')#
+history = model.fit(padded_train,encoded_train_labels,256,70,
+                      validation_split = 0.10,
+                      callbacks=callbacks_list ,
+                      verbose=1)
+#model.load_weights('LSTM_CNN_ATT_Fasttext_final_03052020.h5')#
 #
-#model.save('LSTM_CNN_ATT_Fasttext_final_03052020.h5')
+model.save('TASK2_LSTM_CNN_ATT_Fasttext_final_05052020.h5')
 
 res = model.predict(padded_test)
 #joblib.dump(res,'results_prediction.vec')

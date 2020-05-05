@@ -5,7 +5,7 @@
 import csv
 import pickle
 
-dic_caps = pickle.load(open("dic_caps.pck", "rb"))
+dic_caps = pickle.load(open("support/dic_caps.pck", "rb"))
 
 
 class code_desc:
