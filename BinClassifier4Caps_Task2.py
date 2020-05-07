@@ -186,7 +186,7 @@ def BinClassifer(cap):
 for i in range(0, 16):
     createAllCSV4BinClassifier(i)
 
-for i in range(0, 21):
+for i in range(0, 16):
     print('Run numero ' + str(i + 1))
     if i != 2 and i != 7 and i != 9:
         BinClassifer(i)
