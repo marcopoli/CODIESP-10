@@ -1,5 +1,6 @@
 from boto import sns
 from pandas import read_csv
+from sklearn.svm import SVC
 from tqdm import tqdm  # barra di progresso
 from gensim.models import Doc2Vec
 from sklearn import utils
@@ -17,7 +18,7 @@ import pickle
 
 def tokenize_text(text):
     # Acquisizione delle stop word
-    file_stopw = open("stop_word.pck", "rb")
+    file_stopw = open("support/stop_word.pck", "rb")
     stop_word = pickle.load(file_stopw)
     tokens = list(str(text).lower().split(" "))
     for z in range(0, len(stop_word)):
@@ -86,7 +87,7 @@ class code_desc:
 def createAllCSV4BinClassifier(cap):
     l_caps = []
     # Inseriamo le tuple che appartengono al capitolo cap
-    with open('cap' + str(cap) + 'Train_Task2.csv', mode='r') as csv_file:
+    with open('Training/Task2/Caps/cap' + str(cap) + 'Train_Task2.csv', mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         first = True
         for riga in csv_reader:
@@ -100,7 +101,7 @@ def createAllCSV4BinClassifier(cap):
     # Inseriamo le tuple che appartengono agli altri capitoli
     for i in range(0, 16):
         if i != cap:
-            with open('cap' + str(i) + 'Train_Task2.csv', mode='r') as csv_file:
+            with open('Training/Task2/Caps/cap' + str(i) + 'Train_Task2.csv', mode='r') as csv_file:
                 csv_reader = csv.DictReader(csv_file)
                 first = True
                 for riga in csv_reader:
@@ -163,11 +164,11 @@ def BinClassifer(cap):
         model_dmm.alpha -= 0.002
         model_dmm.min_alpha = model_dmm.alpha
 
-    model_dmm.save('ModelBinClassCap' + str(cap) + '_Task2.bin')  # salvo il modello
+    model_dmm.save('models/Task2/ModelBinClassCap' + str(cap) + '_Task2.bin')  # salvo il modello
 
     y_train, X_train = vec_for_learning(model_dmm, train_tagged)
     y_test, X_test = vec_for_learning(model_dmm, test_tagged)
-    logreg = LogisticRegression(n_jobs=1, C=1e5, max_iter=2000)
+    logreg = SVC(C=0.1, kernel='rbf')
     logreg.fit(X_train, y_train)
     y_pred = logreg.predict(X_test)
     # y_pred = logreg.predict_proba(X_test)
@@ -186,7 +187,7 @@ def BinClassifer(cap):
 for i in range(0, 16):
     createAllCSV4BinClassifier(i)
 
-for i in range(0, 21):
+for i in range(0, 15):
     print('Run numero ' + str(i + 1))
     if i != 2 and i != 7 and i != 9:
         BinClassifer(i)
