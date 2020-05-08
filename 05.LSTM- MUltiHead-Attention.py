@@ -7,8 +7,9 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
+from keras_multi_head import MultiHead
 import random
-from keras.layers import Input
+from keras.layers import Input, Flatten, TimeDistributed
 import keras
 from keras.layers import Conv1D , Embedding
 from keras.layers import Dropout
@@ -18,6 +19,7 @@ from keras.layers import Dense
 from keras.layers import GlobalMaxPool1D
 from keras.layers import Bidirectional
 import category_encoders as ce
+from attention_decoder import AttentionDecoder
 
 from keras.callbacks import ModelCheckpoint
 from keras_self_attention import SeqSelfAttention
@@ -202,26 +204,17 @@ joblib.dump(embedding_matrix,'e.vec')
 # define the model
 input = Input(shape=(64,))
 m = Embedding(vocab_size, 300, weights=[embedding_matrix], input_length=64, trainable=False) (input)
-bi = Bidirectional(LSTM(64, activation ='tanh', return_sequences = True, dropout=0.3)) (m)
+bi = MultiHead(LSTM(64, activation ='tanh', return_sequences = True), layer_num=5, name='Multi-LSTMs') (m)
+bi = Flatten() (bi)
 
-aa = SeqSelfAttention(attention_activation='tanh') (bi)
-aa = Conv1D(128,5, activation ='relu' ) (aa)
-aa = MaxPool1D(2) (aa)
-aa = Dropout(0.2) (aa)
-
-added = keras.layers.Concatenate(axis=1)([aa,bi])
-
-ff = GlobalMaxPool1D() (added)
-ff = Dense(4000)(ff)
-ff = Dropout(0.3) (ff)
+ff = Dense(3000)(bi)
+ff = Dropout(0.1) (ff)
 ff =Dense(len(le.category_mapping[0]['mapping']), activation='softmax') (ff)
 
 model = keras.models.Model(inputs=[input], outputs=[ff])
 
-model.summary(line_length=100)
-
 from keras.callbacks import CSVLogger
-filepath="TASK2_LSTM_CNN_ATT_Fasttext_03052020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
+filepath="TASK2_multiheadAtt_Fasttext_03052020weights.{epoch:05d}-{val_loss:.5f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 callbacks_list = [
@@ -230,7 +223,7 @@ callbacks_list = [
 
 model.compile (loss='categorical_crossentropy' , optimizer='adam' , metrics=[ 'accuracy'] )
 #print(padded_train)
-history = model.fit(padded_train,encoded_train_labels,256,50,
+history = model.fit(padded_train,encoded_train_labels,512,50,
                       validation_split = 0.10,
                       callbacks=callbacks_list ,
                       verbose=1)
@@ -297,7 +290,7 @@ for key, value in od.items():
     extracted_res.append(value.lower())
     extractede_ids.append(previous_id)
 
-file = open('task1_run3_lstm_cnn_attention_multiclass.tsv','w+')
+file = open('task1_run1_multihead_lstm.tsv','w+')
 
 for i in range(0, len(extracted_res)):
   file.write(str(extractede_ids[i])+'\t'+str(extracted_res[i])+'\n')

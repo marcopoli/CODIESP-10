@@ -4,6 +4,7 @@ import pandas as pd
 import sister
 from sister.word_embedders import FasttextEmbedding
 from sklearn.metrics.pairwise import cosine_similarity
+import joblib
 
 embedder = sister.MeanEmbedding(lang="es", word_embedder = FasttextEmbedding('es'))
 
@@ -70,6 +71,27 @@ def tokenize_text(text):
                 tokens.remove(str(stop_word[z]))
     return tokens
 
+left_to_classify= joblib.load('left_to_classify_Task2.vec')
+
+left_to_classify_vector = []
+i = 0
+for row in left_to_classify:
+    tokens = tokenize_text(row)
+    r = ''
+    for t in tokens:
+        r = r +' '+ str(t)
+    vector = embedder(r)
+    try:
+        if len(vector) == 300:
+            left_to_classify_vector.append(vector)
+
+    except:
+        print('except')
+
+    i = i+1
+    if i%1000 == 0:
+        print(i)
+
 df3 = pd.read_csv('Training/Task2/Train_with_only_abstract_Task2.csv')
 df3 = df3[['Code', 'Desc']]
 df3['Desc'] = df3['Desc'].apply(remove_symbol)
@@ -99,7 +121,7 @@ for row in descrs:
     if i%1000 == 0:
         print(i)
 
-import joblib
+
 dic = np.array(dic)
 #print(dic.shape)
 #joblib.dump(dic,'description_embeddings.vec')
@@ -110,8 +132,8 @@ dic = np.array(dic)
 print('finish')
 
 #Take it from
-left_to_classify_ids = joblib.load('left_to_classify_ids.vec')
-left_to_classify_vector = joblib.load('left_to_classify_vector.vec')
+left_to_classify_ids = joblib.load('left_to_classify_ids_Task2.vec')
+#left_to_classify_vector = joblib.load('left_to_classify_vector_Task2.vec')
 left_to_classify_vector = np.array(left_to_classify_vector)
 
 print(left_to_classify_vector.shape)
@@ -135,26 +157,39 @@ print(res[0])
 
 file = open('task2_res_similiarity.tsv','w+')
 
-extracted = [[i.argmax()] for i in res]
+#extracted = [[i.argmax()] for i in res]
 
 i = 0
-for item in extracted:
+last_id = left_to_classify_ids[0]
+already_in = []
+for item in res:
     id = left_to_classify_ids[i]
-    code = final_codes[item[0]]
-    #count = 0
-    #for a in range(0,len(item)):
-    #    if item[a] > (item.max()-(item.max()*0.005)):
-    #        count = count+1
-    #        code = final_codes[a]
-    #        file.write(str(id)+'\t'+str(code).lower()+'\n')
-    #        file.flush()
-    #if count == 0:
-    #    index = item.argmax()
-    #    code = final_codes[index]
-    #    file.write(str(id) + '\t' + str(code).lower() + '\n')
-    #    file.flush()
-    file.write(str(id) + '\t' + str(code).lower() + '\n')
-    file.flush()
+   # code = final_codes[item[0]]
+    if id != last_id:
+        already_in = []
+        last_id =id
+    count = 0
+
+    max_val = (item.max() - (item.max() * 0.3))
+    for a in range(0,len(item)):
+
+        it = item[a]
+
+        if it > max_val:
+            code = final_codes[a]
+            if code not in already_in:
+                count = count+1
+                already_in.append(code)
+                file.write(str(id)+'\t'+str(code).lower()+'\n')
+                file.flush()
+   # if count == 0:
+   #     index = item.argmax()
+   #     code = final_codes[index]
+   #     file.write(str(id) + '\t' + str(code).lower() + '\n')
+   #     file.flush()
+    #file.write(str(id) + '\t' + str(code).lower() + '\n')
+    #file.flush()
+    #print(count)
 
     i =i+1
 
