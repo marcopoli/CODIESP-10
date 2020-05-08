@@ -1,9 +1,11 @@
 # I file che servono sono tutti i cap_Train.csv e stop_word.pck , entrambi presenti in
 # https://drive.google.com/drive/folders/1g0luJ9T0pzvjfDYejHMBtXAAb7HZXtLn?usp=sharing
+import warnings
+warnings.filterwarnings("ignore")
 
 from boto import sns
 from pandas import read_csv
-from tqdm import tqdm  # barra di progresso
+#from tqdm import tqdm  # barra di progresso
 from gensim.models import Doc2Vec
 from sklearn import utils
 from sklearn.model_selection import train_test_split
@@ -19,7 +21,7 @@ from sklearn.naive_bayes import GaussianNB
 
 def tokenize_text(text):
     # Acquisizione delle stop word
-    file_stopw = open("stop_word.pck", "rb")
+    file_stopw = open("support/stop_word.pck", "rb")
     stop_word = pickle.load(file_stopw)
     tokens = list(str(text).lower().split(" "))
     for z in range(0, len(stop_word)):
@@ -74,7 +76,7 @@ def vec_for_learning(model, tagged_docs):
 def classifiers(cap):
     # Seguiremo questo:
     # https://towardsdatascience.com/multi-class-text-classification-with-doc2vec-logistic-regression-9da9947b43f4
-    df = read_csv('cap' + str(cap) + 'Train.csv')
+    df = read_csv('Training/Caps/cap' + str(cap) + 'Train.csv')
     df = df[['Code', 'Desc']]
     # df = df[pd.notnull(df['desc'])]
     print(df.head(10))
@@ -90,7 +92,7 @@ def classifiers(cap):
     plt.xlabel('Code', fontsize=8)
     plt.xticks(rotation=90)
     # plt.show()    # se lo metto si potrebbe impallare, quindi non lo metto così esce alla fine dell'esecuzione
-    plt.savefig('Diagram_Cap' + str(cap) + '.png')
+    #plt.savefig('Diagram_Cap' + str(cap) + '.png')
 
     df['Desc'] = df['Desc'].apply(remove_symbol)
     print(df.head(10))
@@ -104,10 +106,10 @@ def classifiers(cap):
     # Distributed Memory (DM)
     model_dmm = Doc2Vec(dm=1, dm_mean=1, window=10, negative=5, min_count=1, workers=5, alpha=0.065,
                         min_alpha=0.065)
-    model_dmm.build_vocab([x for x in tqdm(train_tagged.values)])
+    model_dmm.build_vocab([x for x in train_tagged.values])
 
     for epoch in range(30):
-        model_dmm.train(utils.shuffle([x for x in tqdm(train_tagged.values)]), total_examples=len(train_tagged.values),
+        model_dmm.train(utils.shuffle([x for x in train_tagged.values]), total_examples=len(train_tagged.values),
                         epochs=1)
         model_dmm.alpha -= 0.002
         model_dmm.min_alpha = model_dmm.alpha
@@ -117,7 +119,7 @@ def classifiers(cap):
     logreg = LogisticRegression(n_jobs=1, C=1e5, max_iter=2000)
     logreg.fit(X_train, y_train)
     y_pred = logreg.predict(X_test)
-    logreg.predict_log_proba()
+    #logreg.predict_log_proba()
     print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
     print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
     # Testing accuracy 0.3333333333333333   per il capitolo 3 (quello con le 'e')
@@ -128,11 +130,11 @@ def classifiers(cap):
     #                                                         'simétricos'), steps=20)]))
     # ['e04.9']
 
-    modelNB = GaussianNB()
-    modelNB.fit(X_train, y_train)
-    y_pred = modelNB.predict(X_test)
-    print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
-    print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
+    #modelNB = GaussianNB()
+    #modelNB.fit(X_train, y_train)
+    #y_pred = modelNB.predict(X_test)
+    #print('Testing accuracy %s' % accuracy_score(y_test, y_pred))
+    #print('Testing F1 score: {}'.format(f1_score(y_test, y_pred, average='weighted')))
     # Testing accuracy 0.34285714285714286  per il capitolo 3 (quello con le 'e')
     # Testing F1 score: 0.2883636083541398
 
