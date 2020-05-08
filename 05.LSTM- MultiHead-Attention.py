@@ -19,7 +19,6 @@ from keras.layers import Dense
 from keras.layers import GlobalMaxPool1D
 from keras.layers import Bidirectional
 import category_encoders as ce
-from attention_decoder import AttentionDecoder
 
 from keras.callbacks import ModelCheckpoint
 from keras_self_attention import SeqSelfAttention
