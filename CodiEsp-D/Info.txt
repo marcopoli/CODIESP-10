@@ -1,0 +1,23 @@
+Team: SWAP;
+Affiliation: University of Bari;
+Country: IT;
+Contact Person: Marco Polignano;
+Contact email: marco.polignano@uniba.it.
+
+---------------------------------------------------------
+TEAM
+
+Marco Polignano
+University of Bari ALDO MORO
+Dept. Computer Science
+marco.polignano@uniba.it
+
+Vincenzo Suriano
+University of Bari ALDO MORO
+Dept. Computer Science
+vsuriano89@gmail.com
+
+Pasquale Lops
+University of Bari ALDO MORO
+Dept. Computer Science
+pasquale.lops@uniba.it
